@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GuardianGate — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand:#2E9E43; --brand-deep:#196B2E;
+    --bg:#060d0a; --bg2:#0a1712;
+    --glass:rgba(255,255,255,0.05); --line:rgba(255,255,255,0.12);
+    --text:#f3f7f4; --dim:#9fb3a8;
+    --amber:#E0B341; --red:#e56b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;color:var(--text);
+    background:radial-gradient(1200px 700px at 75% -10%,var(--bg2),transparent 60%),var(--bg);
+    min-height:100vh;}
+  .hidden{display:none !important;}
+
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{width:100%;max-width:380px;background:var(--glass);border:1px solid var(--line);
+    border-radius:24px;padding:38px 30px;backdrop-filter:blur(20px);box-shadow:0 30px 80px rgba(0,0,0,0.5);}
+  .brand{font-family:'Space Grotesk';font-weight:700;font-size:26px;text-align:center;letter-spacing:-0.5px;}
+  .brand b{color:var(--brand);}
+  .pilot{display:block;width:fit-content;margin:12px auto 0;font-size:11px;letter-spacing:0.12em;
+    text-transform:uppercase;color:var(--brand);border:1px solid rgba(46,158,67,0.4);
+    border-radius:999px;padding:4px 12px;background:rgba(46,158,67,0.08);}
+  .card label{display:block;font-size:12px;color:var(--dim);margin:22px 0 6px;}
+  .card input{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.18);
+    color:var(--text);font-size:15px;padding:8px 2px;outline:none;font-family:'Inter';}
+  .card input:focus{border-color:var(--brand);}
+  .btn{width:100%;border:none;cursor:pointer;font-family:'Space Grotesk';font-weight:600;font-size:15px;
+    color:#05210f;padding:14px;border-radius:999px;margin-top:28px;
+    background:linear-gradient(135deg,var(--brand),var(--brand-deep));transition:filter .2s,transform .15s;}
+  .btn:hover{filter:brightness(1.06);transform:translateY(-1px);}
+  .err{color:var(--red);font-size:13px;text-align:center;margin-top:14px;min-height:16px;}
+
+  header{display:flex;align-items:center;justify-content:space-between;
+    padding:18px 28px;border-bottom:1px solid var(--line);background:rgba(10,23,18,0.6);
+    position:sticky;top:0;backdrop-filter:blur(12px);z-index:5;}
+  .htitle{font-family:'Space Grotesk';font-weight:700;font-size:19px;letter-spacing:-0.3px;}
+  .htitle b{color:var(--brand);}
+  .hsub{font-size:11px;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px;}
+  .logout{background:transparent;border:1px solid var(--line);color:var(--dim);
+    padding:8px 16px;border-radius:999px;cursor:pointer;font-family:'Inter';font-size:13px;}
+  .logout:hover{color:var(--text);border-color:var(--brand);}
+  main{max-width:1000px;margin:0 auto;padding:28px;}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
+  .stat{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:18px;}
+  .stat .n{font-family:'Space Grotesk';font-weight:700;font-size:30px;}
+  .stat .l{font-size:12px;color:var(--dim);margin-top:4px;letter-spacing:0.04em;}
+
+  .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .tab{background:var(--glass);border:1px solid var(--line);color:var(--dim);
+    padding:9px 18px;border-radius:999px;cursor:pointer;font-family:'Space Grotesk';font-weight:500;font-size:14px;}
+  .tab.active{background:var(--brand);color:#05210f;border-color:var(--brand);}
+
+  .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .chip{background:var(--glass);border:1px solid var(--line);color:var(--dim);
+    padding:6px 14px;border-radius:999px;cursor:pointer;font-size:13px;}
+  .chip.active{background:rgba(46,158,67,0.15);border-color:var(--brand);color:var(--brand);}
+  .refresh{margin-left:auto;font-size:12px;color:var(--dim);display:flex;align-items:center;gap:8px;}
+
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--dim);
+    padding:10px 14px;border-bottom:1px solid var(--line);}
+  td{padding:14px;border-bottom:1px solid rgba(255,255,255,0.06);font-size:14px;}
+  tr:hover td{background:rgba(255,255,255,0.02);}
+  .name{font-family:'Space Grotesk';font-weight:600;}
+  .pill{display:inline-block;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.5px;}
+  .p-pending{background:rgba(224,179,65,0.15);color:var(--amber);border:1px solid rgba(224,179,65,0.4);}
+  .p-approved,.p-released{background:rgba(46,158,67,0.15);color:var(--brand);border:1px solid rgba(46,158,67,0.4);}
+  .p-denied{background:rgba(229,107,107,0.15);color:var(--red);border:1px solid rgba(229,107,107,0.4);}
+  .empty{text-align:center;color:var(--dim);padding:50px;}
+
+  .admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:22px;}
+  .fcard{background:var(--glass);border:1px solid var(--line);border-radius:18px;padding:22px;}
+  .fcard h3{font-family:'Space Grotesk';font-weight:600;font-size:16px;margin-bottom:16px;}
+  .fcard label{display:block;font-size:12px;color:var(--dim);margin:14px 0 5px;}
+  .fcard label:first-of-type{margin-top:0;}
+  .fcard input,.fcard select{width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--line);
+    color:var(--text);font-size:14px;padding:10px 12px;border-radius:10px;outline:none;font-family:'Inter';}
+  .fcard input:focus,.fcard select:focus{border-color:var(--brand);}
+  .fcard select option{background:var(--bg2);}
+  .checkrow{display:flex;align-items:center;gap:8px;margin-top:14px;color:var(--dim);font-size:13px;}
+  .fbtn{width:100%;border:none;cursor:pointer;font-family:'Space Grotesk';font-weight:600;font-size:14px;
+    color:#05210f;padding:12px;border-radius:10px;margin-top:18px;
+    background:linear-gradient(135deg,var(--brand),var(--brand-deep));transition:filter .2s;}
+  .fbtn:hover{filter:brightness(1.06);}
+  .fmsg{font-size:12px;margin-top:10px;min-height:14px;}
+  .fmsg.ok{color:var(--brand);} .fmsg.bad{color:var(--red);}
+
+  .lhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+  .lhead h3{font-family:'Space Grotesk';font-weight:600;font-size:16px;}
+  .mini{background:rgba(46,158,67,0.14);border:1px solid rgba(46,158,67,0.4);color:var(--brand);
+    padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Inter';}
+  .mini:hover{background:rgba(46,158,67,0.24);}
+  .mini.ghost{background:transparent;border-color:var(--line);color:var(--dim);cursor:not-allowed;}
+  .dlall{background:rgba(46,158,67,0.14);border:1px solid rgba(46,158,67,0.4);color:var(--brand);
+    padding:9px 16px;border-radius:999px;cursor:pointer;font-size:13px;font-family:'Space Grotesk';font-weight:600;}
+  .dlall:hover{background:rgba(46,158,67,0.24);}
+</style>
+</head>
+<body>
+
+  <div id="login">
+    <div class="card">
+      <div class="brand">Guardian<b>Gate</b></div>
+      <span class="pilot">Dashboard · Trinityhouse Centurion</span>
+      <label>Email address</label>
+      <input id="email" type="email" placeholder="office@trinityhouse.co.za" />
+      <label>Password</label>
+      <input id="password" type="password" placeholder="••••••••" />
+      <button class="btn" onclick="login()">Sign in</button>
+      <div class="err" id="loginErr"></div>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <header>
+      <div>
+        <div class="htitle">Guardian<b>Gate</b> Dashboard</div>
+        <div class="hsub" id="whoami">Trinityhouse Centurion</div>
+      </div>
+      <button class="logout" onclick="logout()">Log out</button>
+    </header>
+    <main>
+      <div class="stats">
+        <div class="stat"><div class="n" id="s-total">0</div><div class="l">Total pickups</div></div>
+        <div class="stat"><div class="n" id="s-pending" style="color:var(--amber)">0</div><div class="l">Pending</div></div>
+        <div class="stat"><div class="n" id="s-approved" style="color:var(--brand)">0</div><div class="l">Approved</div></div>
+        <div class="stat"><div class="n" id="s-released" style="color:var(--brand)">0</div><div class="l">Released</div></div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" id="tab-pickups" onclick="switchTab('pickups')">Pickups</div>
+        <div class="tab" id="tab-absences" onclick="switchTab('absences')">Absences</div>
+        <div class="tab hidden" id="tab-admin" onclick="switchTab('admin')">Admin</div>
+      </div>
+
+      <div id="view-pickups">
+        <div class="toolbar">
+          <div class="chip active" data-f="all" onclick="setFilter('all')">All</div>
+          <div class="chip" data-f="pending" onclick="setFilter('pending')">Pending</div>
+          <div class="chip" data-f="approved" onclick="setFilter('approved')">Approved</div>
+          <div class="chip" data-f="released" onclick="setFilter('released')">Released</div>
+          <div class="refresh"><span id="refreshDot">●</span> auto-refresh</div>
+        </div>
+        <table>
+          <thead><tr><th>Learner</th><th>Collector</th><th>Grade</th><th>Date</th><th>Status</th><th>Badge</th></tr></thead>
+          <tbody id="pickupRows"></tbody>
+        </table>
+        <div class="empty hidden" id="pickupEmpty">No pickups to show.</div>
+      </div>
+
+      <div id="view-absences" class="hidden">
+        <table>
+          <thead><tr><th>Learner</th><th>Date</th><th>Reason</th><th>Reported by</th></tr></thead>
+          <tbody id="absenceRows"></tbody>
+        </table>
+        <div class="empty hidden" id="absenceEmpty">No absences reported.</div>
+      </div>
+
+      <div id="view-admin" class="hidden">
+        <div class="admin-grid">
+          <div class="fcard">
+            <h3>Add a learner</h3>
+            <label>Full name</label>
+            <input id="l-name" placeholder="Omphile Lekota" />
+            <label>Grade</label>
+            <input id="l-grade" placeholder="Grade 0" />
+            <button class="fbtn" onclick="addLearner()">Add learner</button>
+            <div class="fmsg" id="l-msg"></div>
+          </div>
+          <div class="fcard">
+            <h3>Add a person</h3>
+            <label>Full name</label>
+            <input id="u-name" placeholder="Soaka Lekota" />
+            <label>Email</label>
+            <input id="u-email" placeholder="soaka@example.com" />
+            <label>Phone (optional)</label>
+            <input id="u-phone" placeholder="+27..." />
+            <label>Temporary password</label>
+            <input id="u-pass" placeholder="At least 6 characters" />
+            <label>Role</label>
+            <select id="u-role">
+              <option value="parent">Parent</option>
+              <option value="guard">Guard</option>
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button class="fbtn" onclick="addUser()">Add person</button>
+            <div class="fmsg" id="u-msg"></div>
+          </div>
+          <div class="fcard">
+            <h3>Link a guardian</h3>
+            <label>Learner</label>
+            <select id="k-learner"></select>
+            <label>Guardian (parent)</label>
+            <select id="k-guardian"></select>
+            <label>Relationship</label>
+            <input id="k-rel" placeholder="Mother / Father / Driver" />
+            <div class="checkrow">
+              <input type="checkbox" id="k-collect" checked style="width:auto" />
+              <span>Approved to collect</span>
+            </div>
+            <button class="fbtn" onclick="addLink()">Link guardian</button>
+            <div class="fmsg" id="k-msg"></div>
+          </div>
+        </div>
+
+        <div class="lhead">
+          <h3>Learners</h3>
+          <button class="dlall" onclick="downloadAll()">Download all badges (.zip)</button>
+        </div>
+        <table>
+          <thead><tr><th>Learner</th><th>Grade</th><th>QR token</th><th>Badge</th></tr></thead>
+          <tbody id="learnerRows"></tbody>
+        </table>
+        <div class="empty hidden" id="learnerEmpty">No learners yet.</div>
+      </div>
+    </main>
+  </div>
+
+<script>
+  const KEY = 'gg_token';
+  let filter = 'all';
+  let tab = 'pickups';
+  let timer = null;
+  let canManage = false;
+  let learnersCache = [];
+  let usersCache = [];
+  let learnerNames = {};
+
+  function token(){ return localStorage.getItem(KEY); }
+  function authHeader(){ return { 'Authorization': 'Bearer ' + token() }; }
+  function jsonHeader(){ return { 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' }; }
+
+  function fmtDate(iso){
+    if(!iso) return '—';
+    const d = new Date(iso);
+    if(isNaN(d)) return '—';
+    return d.toLocaleDateString(undefined,{day:'2-digit',month:'short'}) + ' ' +
+           d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  }
+
+  async function login(){
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const err = document.getElementById('loginErr'); err.textContent = '';
+    try{
+      const r = await fetch('/auth/login', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email, password }) });
+      if(r.status === 200){ localStorage.setItem(KEY, (await r.json()).access_token); showApp(); }
+      else if(r.status === 401){ err.textContent = 'Invalid email or password'; }
+      else { err.textContent = 'Something went wrong (' + r.status + ')'; }
+    } catch(e){ err.textContent = 'Cannot reach the server.'; }
+  }
+
+  function logout(){
+    localStorage.removeItem(KEY);
+    if(timer) clearInterval(timer);
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('login').classList.remove('hidden');
+  }
+
+  async function showApp(){
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    try{
+      const me = await fetch('/auth/me', { headers: authHeader() });
+      if(me.status !== 200){ logout(); return; }
+      const u = await me.json();
+      canManage = (u.role === 'admin' || u.role === 'staff');
+      document.getElementById('whoami').textContent =
+        u.full_name + ' · ' + u.role.toUpperCase() + ' · Trinityhouse Centurion';
+      if(canManage){ document.getElementById('tab-admin').classList.remove('hidden'); }
+    } catch(e){ logout(); return; }
+
+    loadPickups(); loadAbsences();
+    if(timer) clearInterval(timer);
+    timer = setInterval(() => { if(tab === 'pickups') loadPickups(); }, 10000);
+  }
+
+  function switchTab(t){
+    tab = t;
+    ['pickups','absences','admin'].forEach(x => {
+      document.getElementById('tab-'+x).classList.toggle('active', x===t);
+      document.getElementById('view-'+x).classList.toggle('hidden', x!==t);
+    });
+    if(t === 'admin') loadAdmin();
+  }
+
+  function setFilter(f){
+    filter = f;
+    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.f === f));
+    loadPickups();
+  }
+
+  async function loadPickups(){
+    const url = filter === 'all' ? '/pickups' : '/pickups?status=' + filter;
+    let data = [];
+    try{
+      const r = await fetch(url, { headers: authHeader() });
+      if(r.status === 401){ logout(); return; }
+      if(r.status === 200) data = await r.json();
+    } catch(e){ return; }
+
+    let all = data;
+    if(filter !== 'all'){ try{ all = await (await fetch('/pickups',{headers:authHeader()})).json(); }catch(e){} }
+    document.getElementById('s-total').textContent = all.length;
+    document.getElementById('s-pending').textContent = all.filter(p=>p.status==='pending').length;
+    document.getElementById('s-approved').textContent = all.filter(p=>p.status==='approved').length;
+    document.getElementById('s-released').textContent = all.filter(p=>p.status==='released').length;
+
+    const rows = document.getElementById('pickupRows');
+    document.getElementById('pickupEmpty').classList.toggle('hidden', data.length > 0);
+    rows.innerHTML = '';
+    data.forEach(p => {
+      learnerNames[p.learner_id] = p.learner_name;
+      const badgeCell = canManage
+        ? '<td><button class="mini" onclick="downloadBadge(' + p.learner_id + ')">Badge</button></td>'
+        : '<td>—</td>';
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="name">' + esc(p.learner_name) + '</td>' +
+        '<td>' + esc(p.guardian_name || '—') + '</td>' +
+        '<td>' + esc(p.learner_grade || '—') + '</td>' +
+        '<td>' + fmtDate(p.requested_at) + '</td>' +
+        '<td><span class="pill p-' + p.status + '">' + p.status.toUpperCase() + '</span></td>' +
+        badgeCell;
+      rows.appendChild(tr);
+    });
+  }
+
+  async function loadAbsences(){
+    let data = [];
+    try{ const r = await fetch('/absences', { headers: authHeader() }); if(r.status===200) data = await r.json(); }catch(e){ return; }
+    const rows = document.getElementById('absenceRows');
+    document.getElementById('absenceEmpty').classList.toggle('hidden', data.length > 0);
+    rows.innerHTML = '';
+    data.forEach(a => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="name">' + esc(a.learner_name) + '</td>' +
+        '<td>' + esc(a.absence_date) + '</td>' +
+        '<td>' + esc(a.reason) + '</td>' +
+        '<td>' + esc(a.reporter_name) + '</td>';
+      rows.appendChild(tr);
+    });
+  }
+
+  async function loadAdmin(){
+    try{
+      learnersCache = await (await fetch('/admin/learners', { headers: authHeader() })).json();
+      usersCache = await (await fetch('/admin/users?role=parent', { headers: authHeader() })).json();
+    } catch(e){ return; }
+
+    const rows = document.getElementById('learnerRows');
+    document.getElementById('learnerEmpty').classList.toggle('hidden', learnersCache.length > 0);
+    rows.innerHTML = '';
+    learnersCache.forEach(l => {
+      learnerNames[l.id] = l.full_name;
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="name">' + esc(l.full_name) + '</td>' +
+        '<td>' + esc(l.grade || '—') + '</td>' +
+        '<td style="color:var(--dim);font-size:12px">' + esc(l.qr_token) + '</td>' +
+        '<td><button class="mini" onclick="downloadBadge(' + l.id + ')">Download</button> ' +
+        '<button class="mini ghost" title="Coming soon" disabled>Print</button></td>';
+      rows.appendChild(tr);
+    });
+
+    const ls = document.getElementById('k-learner');
+    ls.innerHTML = learnersCache.map(l => '<option value="'+l.id+'">'+esc(l.full_name)+' ('+esc(l.grade||'')+')</option>').join('');
+    const gs = document.getElementById('k-guardian');
+    gs.innerHTML = usersCache.map(u => '<option value="'+u.id+'">'+esc(u.full_name)+' ('+esc(u.email)+')</option>').join('');
+  }
+
+  function msg(id, text, ok){
+    const el = document.getElementById(id);
+    el.textContent = text; el.className = 'fmsg ' + (ok ? 'ok' : 'bad');
+  }
+
+  async function addLearner(){
+    const full_name = document.getElementById('l-name').value.trim();
+    const grade = document.getElementById('l-grade').value.trim();
+    if(!full_name){ msg('l-msg','Name is required',false); return; }
+    const r = await fetch('/admin/learners', { method:'POST', headers: jsonHeader(),
+      body: JSON.stringify({ full_name, grade: grade || null }) });
+    if(r.status === 201){ msg('l-msg','Learner added ✓',true);
+      document.getElementById('l-name').value=''; document.getElementById('l-grade').value=''; loadAdmin(); }
+    else msg('l-msg','Failed ('+r.status+')',false);
+  }
+
+  async function addUser(){
+    const full_name = document.getElementById('u-name').value.trim();
+    const email = document.getElementById('u-email').value.trim();
+    const phone = document.getElementById('u-phone').value.trim();
+    const password = document.getElementById('u-pass').value;
+    const role = document.getElementById('u-role').value;
+    if(!full_name || !email || !password){ msg('u-msg','Name, email and password required',false); return; }
+    const r = await fetch('/admin/users', { method:'POST', headers: jsonHeader(),
+      body: JSON.stringify({ full_name, email, phone: phone || null, password, role }) });
+    if(r.status === 201){ msg('u-msg','Person added ✓',true);
+      ['u-name','u-email','u-phone','u-pass'].forEach(i=>document.getElementById(i).value=''); loadAdmin(); }
+    else if(r.status === 400){ msg('u-msg','That email is already registered',false); }
+    else msg('u-msg','Failed ('+r.status+')',false);
+  }
+
+  async function addLink(){
+    const learner_id = parseInt(document.getElementById('k-learner').value);
+    const guardian_id = parseInt(document.getElementById('k-guardian').value);
+    const relationship_label = document.getElementById('k-rel').value.trim();
+    const can_collect = document.getElementById('k-collect').checked;
+    if(!learner_id || !guardian_id || !relationship_label){ msg('k-msg','Pick a learner, guardian and relationship',false); return; }
+    const r = await fetch('/admin/guardian-links', { method:'POST', headers: jsonHeader(),
+      body: JSON.stringify({ learner_id, guardian_id, relationship_label, can_collect }) });
+    if(r.status === 201){ msg('k-msg','Linked ✓',true); document.getElementById('k-rel').value=''; }
+    else msg('k-msg','Failed ('+r.status+')',false);
+  }
+
+  function triggerDownload(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  }
+
+  async function downloadBadge(id){
+    const name = learnerNames[id] || 'learner';
+    try{
+      const r = await fetch('/admin/learners/' + id + '/badge', { headers: authHeader() });
+      if(r.status !== 200){ alert('Could not generate badge (' + r.status + ')'); return; }
+      triggerDownload(await r.blob(), name.replace(/ /g, '_') + '_badge.png');
+    } catch(e){ alert('Cannot reach the server.'); }
+  }
+
+  async function downloadAll(){
+    try{
+      const r = await fetch('/admin/badges-zip', { headers: authHeader() });
+      if(r.status !== 200){ alert('Could not generate badges (' + r.status + ')'); return; }
+      triggerDownload(await r.blob(), 'guardiangate_badges.zip');
+    } catch(e){ alert('Cannot reach the server.'); }
+  }
+
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  if(token()) showApp();
+</script>
+</body>
+</html>

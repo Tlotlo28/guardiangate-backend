@@ -101,6 +101,10 @@
     padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Inter';}
   .mini:hover{background:rgba(46,158,67,0.24);}
   .mini.ghost{background:transparent;border-color:var(--line);color:var(--dim);cursor:not-allowed;}
+   .mini.edit{background:transparent;border-color:rgba(255,255,255,0.25);color:var(--dim);}
+  .mini.edit:hover{color:var(--text);}
+  .mini.del{background:rgba(229,107,107,0.12);border-color:rgba(229,107,107,0.4);color:var(--red);}
+  .mini.del:hover{background:rgba(229,107,107,0.22);}
   .dlall{background:rgba(46,158,67,0.14);border:1px solid rgba(46,158,67,0.4);color:var(--brand);
     padding:9px 16px;border-radius:999px;cursor:pointer;font-size:13px;font-family:'Space Grotesk';font-weight:600;}
   .dlall:hover{background:rgba(46,158,67,0.24);}
@@ -219,10 +223,18 @@
           <button class="dlall" onclick="downloadAll()">Download all badges (.zip)</button>
         </div>
         <table>
-          <thead><tr><th>Learner</th><th>Grade</th><th>QR token</th><th>Badge</th></tr></thead>
+          <thead><tr><th>Learner</th><th>Grade</th><th>QR token</th><th>Badg/QR codes</th><th>Actions</th></tr></thead>
           <tbody id="learnerRows"></tbody>
         </table>
         <div class="empty hidden" id="learnerEmpty">No learners yet.</div>
+         <div class="lhead" style="margin-top:32px">
+          <h3>People</h3>
+        </div>
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Actions</th></tr></thead>
+          <tbody id="userRows"></tbody>
+        </table>
+        <div class="empty hidden" id="userEmpty">No people yet.</div>
       </div>
     </main>
   </div>
@@ -358,7 +370,7 @@
   async function loadAdmin(){
     try{
       learnersCache = await (await fetch('/admin/learners', { headers: authHeader() })).json();
-      usersCache = await (await fetch('/admin/users?role=parent', { headers: authHeader() })).json();
+      usersCache = await (await fetch('/admin/users', { headers: authHeader() })).json();
     } catch(e){ return; }
 
     const rows = document.getElementById('learnerRows');
@@ -372,14 +384,31 @@
         '<td>' + esc(l.grade || '—') + '</td>' +
         '<td style="color:var(--dim);font-size:12px">' + esc(l.qr_token) + '</td>' +
         '<td><button class="mini" onclick="downloadBadge(' + l.id + ')">Download</button> ' +
-        '<button class="mini ghost" title="Coming soon" disabled>Print</button></td>';
+        '<button class="mini ghost" title="Coming soon" disabled>Print</button></td>' +
+        '<td><button class="mini edit" onclick="editLearner(' + l.id + ')">Edit</button> ' +
+        '<button class="mini del" onclick="deleteLearner(' + l.id + ')">Delete</button></td>';
       rows.appendChild(tr);
+    });
+
+    const urows = document.getElementById('userRows');
+    document.getElementById('userEmpty').classList.toggle('hidden', usersCache.length > 0);
+    urows.innerHTML = '';
+    usersCache.forEach(u => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="name">' + esc(u.full_name) + '</td>' +
+        '<td>' + esc(u.email) + '</td>' +
+        '<td>' + esc(u.phone || '—') + '</td>' +
+        '<td><span class="pill p-approved">' + esc(u.role.toUpperCase()) + '</span></td>' +
+        '<td><button class="mini edit" onclick="editUser(' + u.id + ')">Edit</button> ' +
+        '<button class="mini del" onclick="deleteUser(' + u.id + ')">Delete</button></td>';
+      urows.appendChild(tr);
     });
 
     const ls = document.getElementById('k-learner');
     ls.innerHTML = learnersCache.map(l => '<option value="'+l.id+'">'+esc(l.full_name)+' ('+esc(l.grade||'')+')</option>').join('');
     const gs = document.getElementById('k-guardian');
-    gs.innerHTML = usersCache.map(u => '<option value="'+u.id+'">'+esc(u.full_name)+' ('+esc(u.email)+')</option>').join('');
+    gs.innerHTML = usersCache.filter(u=>u.role==='parent').map(u => '<option value="'+u.id+'">'+esc(u.full_name)+' ('+esc(u.email)+')</option>').join('');
   }
 
   function msg(id, text, ok){
@@ -439,6 +468,52 @@
       if(r.status !== 200){ alert('Could not generate badge (' + r.status + ')'); return; }
       triggerDownload(await r.blob(), name.replace(/ /g, '_') + '_badge.png');
     } catch(e){ alert('Cannot reach the server.'); }
+  }
+
+  async function editLearner(id){
+    const l = learnersCache.find(x => x.id === id);
+    if(!l) return;
+    const full_name = prompt('Learner name:', l.full_name);
+    if(full_name === null) return;
+    const grade = prompt('Grade:', l.grade || '');
+    if(grade === null) return;
+    const r = await fetch('/admin/learners/' + id, { method:'PATCH', headers: jsonHeader(),
+      body: JSON.stringify({ full_name: full_name.trim(), grade: grade.trim() || null }) });
+    if(r.status === 200) loadAdmin();
+    else alert('Could not update (' + r.status + ')');
+  }
+
+  async function deleteLearner(id){
+    const l = learnersCache.find(x => x.id === id);
+    if(!confirm('Remove ' + (l ? l.full_name : 'this learner') + ' from the active roster?\n\nTheir records are kept, they are just hidden from the active list.')) return;
+    const r = await fetch('/admin/learners/' + id, { method:'DELETE', headers: authHeader() });
+    if(r.status === 200) loadAdmin();
+    else alert('Could not remove (' + r.status + ')');
+  }
+
+  async function editUser(id){
+    const u = usersCache.find(x => x.id === id);
+    if(!u) return;
+    const full_name = prompt('Name:', u.full_name);
+    if(full_name === null) return;
+    const phone = prompt('Phone:', u.phone || '');
+    if(phone === null) return;
+    const email = prompt('Email:', u.email);
+    if(email === null) return;
+    const r = await fetch('/admin/users/' + id, { method:'PATCH', headers: jsonHeader(),
+      body: JSON.stringify({ full_name: full_name.trim(), phone: phone.trim() || null, email: email.trim() }) });
+    if(r.status === 200) loadAdmin();
+    else if(r.status === 400) alert('That email is already registered.');
+    else alert('Could not update (' + r.status + ')');
+  }
+
+  async function deleteUser(id){
+    const u = usersCache.find(x => x.id === id);
+    if(!confirm('Remove ' + (u ? u.full_name : 'this person') + ' from the active list?\n\nTheir records are kept; they just can no longer log in or be selected.')) return;
+    const r = await fetch('/admin/users/' + id, { method:'DELETE', headers: authHeader() });
+    if(r.status === 200) loadAdmin();
+    else if(r.status === 400) alert('You cannot remove your own account.');
+    else alert('Could not remove (' + r.status + ')');
   }
 
   async function downloadAll(){

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, DateTime, ForeignKey, func
+from sqlalchemy import String, DateTime, ForeignKey, Boolean, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -29,6 +29,8 @@ class Learner(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     school: Mapped["School"] = relationship(back_populates="learners")
     guardians: Mapped[list["GuardianLink"]] = relationship(back_populates="learner")

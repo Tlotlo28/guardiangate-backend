@@ -49,3 +49,14 @@ class GuardianLinkOut(BaseModel):
     guardian_name: str
     relationship_label: str
     can_collect: bool
+
+class LearnerUpdate(BaseModel):
+    full_name: str | None = None
+    grade: str | None = None
+
+
+class UserUpdate(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    role: UserRole | None = None

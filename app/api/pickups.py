@@ -43,7 +43,8 @@ def scan_learner(
     learner = db.execute(
         select(Learner).where(Learner.qr_token == qr_token)
     ).scalar_one_or_none()
-    if learner is None or learner.school_id != current_user.school_id:
+    # not found, wrong school, or has left the school -> same 404
+    if learner is None or learner.school_id != current_user.school_id or not learner.is_active:
         raise HTTPException(status_code=404, detail="Learner not found")
 
     links = db.execute(
@@ -58,6 +59,7 @@ def scan_learner(
             can_collect=link.can_collect,
         )
         for link in links
+        if link.guardian.is_active   # hide removed guardians
     ]
     return LearnerScanOut(
         id=learner.id,

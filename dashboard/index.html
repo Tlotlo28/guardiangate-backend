@@ -148,6 +148,7 @@
         <div class="tab active" id="tab-pickups" onclick="switchTab('pickups')">Pickups</div>
         <div class="tab" id="tab-absences" onclick="switchTab('absences')">Absences</div>
         <div class="tab hidden" id="tab-admin" onclick="switchTab('admin')">Admin</div>
+        <div class="tab hidden" id="tab-notices" onclick="switchTab('notices')">Notices</div>
       </div>
 
       <div id="view-pickups">
@@ -178,7 +179,7 @@
           <div class="fcard">
             <h3>Add a learner</h3>
             <label>Full name</label>
-            <input id="l-name" placeholder="Omphile Lekota" />
+            <input id="l-name" placeholder="Phil Smith" />
             <label>Grade</label>
             <input id="l-grade" placeholder="Grade 0" />
             <button class="fbtn" onclick="addLearner()">Add learner</button>
@@ -187,9 +188,9 @@
           <div class="fcard">
             <h3>Add a person</h3>
             <label>Full name</label>
-            <input id="u-name" placeholder="Soaka Lekota" />
+            <input id="u-name" placeholder="John Smith" />
             <label>Email</label>
-            <input id="u-email" placeholder="soaka@example.com" />
+            <input id="u-email" placeholder="john@example.com" />
             <label>Phone (optional)</label>
             <input id="u-phone" placeholder="+27..." />
             <label>Temporary password</label>
@@ -237,8 +238,32 @@
           <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Actions</th></tr></thead>
           <tbody id="userRows"></tbody>
         </table>
-        <div class="empty hidden" id="userEmpty">No people yet.</div>
+        
+        <!-- NOTICES -->
+      <div id="view-notices" class="hidden">
+        <div class="admin-grid">
+          <div class="fcard">
+            <h3>Post a notice</h3>
+            <label>Title</label>
+            <input id="n-title" placeholder="Sports day Friday" />
+            <label>Message</label>
+            <input id="n-body" placeholder="Details for parents..." />
+            <div class="checkrow">
+              <input type="checkbox" id="n-emergency" style="width:auto" />
+              <span>Mark as emergency</span>
+            </div>
+            <button class="fbtn" onclick="postNotice()">Post notice</button>
+            <div class="fmsg" id="n-msg"></div>
+          </div>
+        </div>
+        <div class="lhead"><h3>Posted notices</h3></div>
+        <table>
+          <thead><tr><th>Title</th><th>Message</th><th>Type</th><th>Posted by</th></tr></thead>
+          <tbody id="noticeRows"></tbody>
+        </table>
+        <div class="empty hidden" id="noticeEmpty">No notices yet.</div>
       </div>
+        
     </main>
   </div>
 
@@ -301,7 +326,10 @@
       canManage = (u.role === 'admin' || u.role === 'staff');
       document.getElementById('whoami').textContent =
         u.full_name + ' · ' + u.role.toUpperCase() + ' · Trinityhouse Centurion';
-      if(canManage){ document.getElementById('tab-admin').classList.remove('hidden'); }
+      if(canManage){
+        document.getElementById('tab-admin').classList.remove('hidden');
+        document.getElementById('tab-notices').classList.remove('hidden');
+      }
     } catch(e){ logout(); return; }
 
     loadPickups(); loadAbsences();
@@ -311,11 +339,12 @@
 
   function switchTab(t){
     tab = t;
-    ['pickups','absences','admin'].forEach(x => {
+    ['pickups','absences','admin','notices'].forEach(x => {
       document.getElementById('tab-'+x).classList.toggle('active', x===t);
       document.getElementById('view-'+x).classList.toggle('hidden', x!==t);
     });
     if(t === 'admin') loadAdmin();
+    if(t === 'notices') loadNotices();
   }
 
   function setFilter(f){
@@ -524,6 +553,82 @@
     if(r.status === 200) loadAdmin();
     else if(r.status === 400) alert('You cannot remove your own account.');
     else alert('Could not remove (' + r.status + ')');
+  }
+
+  async function loadNotices(){
+    let data = [];
+    try{
+      const r = await fetch('/notices', { headers: authHeader() });
+      if(r.status === 200) data = await r.json();
+    } catch(e){ return; }
+    const rows = document.getElementById('noticeRows');
+    document.getElementById('noticeEmpty').classList.toggle('hidden', data.length > 0);
+    rows.innerHTML = '';
+    data.forEach(n => {
+      const emergency = n.category === 'emergency';
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="name">' + esc(n.title) + '</td>' +
+        '<td>' + esc(n.body) + '</td>' +
+        '<td><span class="pill ' + (emergency ? 'p-denied' : 'p-approved') + '">' +
+          (emergency ? 'EMERGENCY' : 'GENERAL') + '</span></td>' +
+        '<td>' + esc(n.author_name || '—') + '</td>';
+      rows.appendChild(tr);
+    });
+  }
+
+  async function postNotice(){
+    const title = document.getElementById('n-title').value.trim();
+    const body = document.getElementById('n-body').value.trim();
+    const category = document.getElementById('n-emergency').checked ? 'emergency' : 'general';
+    if(!title || !body){ msg('n-msg','Title and message are required', false); return; }
+    const r = await fetch('/notices', { method:'POST', headers: jsonHeader(),
+      body: JSON.stringify({ title, body, category }) });
+    if(r.status === 201){
+      msg('n-msg','Notice posted ✓', true);
+      document.getElementById('n-title').value = '';
+      document.getElementById('n-body').value = '';
+      document.getElementById('n-emergency').checked = false;
+      loadNotices();
+    } else msg('n-msg','Could not post (' + r.status + ')', false);
+  }
+
+  async function loadNotices(){
+    let data = [];
+    try{
+      const r = await fetch('/notices', { headers: authHeader() });
+      if(r.status === 200) data = await r.json();
+    } catch(e){ return; }
+    const rows = document.getElementById('noticeRows');
+    document.getElementById('noticeEmpty').classList.toggle('hidden', data.length > 0);
+    rows.innerHTML = '';
+    data.forEach(n => {
+      const emergency = n.category === 'emergency';
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="name">' + esc(n.title) + '</td>' +
+        '<td>' + esc(n.body) + '</td>' +
+        '<td><span class="pill ' + (emergency ? 'p-denied' : 'p-approved') + '">' +
+          (emergency ? 'EMERGENCY' : 'GENERAL') + '</span></td>' +
+        '<td>' + esc(n.author_name || '—') + '</td>';
+      rows.appendChild(tr);
+    });
+  }
+
+  async function postNotice(){
+    const title = document.getElementById('n-title').value.trim();
+    const body = document.getElementById('n-body').value.trim();
+    const category = document.getElementById('n-emergency').checked ? 'emergency' : 'general';
+    if(!title || !body){ msg('n-msg','Title and message are required', false); return; }
+    const r = await fetch('/notices', { method:'POST', headers: jsonHeader(),
+      body: JSON.stringify({ title, body, category }) });
+    if(r.status === 201){
+      msg('n-msg','Notice posted ✓', true);
+      document.getElementById('n-title').value = '';
+      document.getElementById('n-body').value = '';
+      document.getElementById('n-emergency').checked = false;
+      loadNotices();
+    } else msg('n-msg','Could not post (' + r.status + ')', false);
   }
 
   async function downloadAll(){

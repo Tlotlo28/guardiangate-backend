@@ -119,7 +119,10 @@
       <label>Email address</label>
       <input id="email" type="email" placeholder="office@trinityhouse.co.za" />
       <label>Password</label>
-      <input id="password" type="password" placeholder="••••••••" />
+      <div style="position:relative;">
+        <input id="password" type="password" placeholder="••••••••" style="width:100%;padding-right:34px;" />
+        <span id="eye" onclick="togglePw()" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--dim);font-size:13px;user-select:none;">Show</span>
+      </div>
       <button class="btn" onclick="login()">Sign in</button>
       <div class="err" id="loginErr"></div>
     </div>
@@ -259,6 +262,13 @@
     if(isNaN(d)) return '—';
     return d.toLocaleDateString(undefined,{day:'2-digit',month:'short'}) + ' ' +
            d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function togglePw(){
+    const inp = document.getElementById('password');
+    const eye = document.getElementById('eye');
+    if(inp.type === 'password'){ inp.type = 'text'; eye.textContent = 'Hide'; }
+    else { inp.type = 'password'; eye.textContent = 'Show'; }
   }
 
   async function login(){

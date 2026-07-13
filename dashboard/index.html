@@ -238,6 +238,8 @@
           <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Actions</th></tr></thead>
           <tbody id="userRows"></tbody>
         </table>
+        <div class="empty hidden" id="userEmpty">No people yet.</div>
+      </div>
         
         <!-- NOTICES -->
       <div id="view-notices" class="hidden">
@@ -593,43 +595,6 @@
     } else msg('n-msg','Could not post (' + r.status + ')', false);
   }
 
-  async function loadNotices(){
-    let data = [];
-    try{
-      const r = await fetch('/notices', { headers: authHeader() });
-      if(r.status === 200) data = await r.json();
-    } catch(e){ return; }
-    const rows = document.getElementById('noticeRows');
-    document.getElementById('noticeEmpty').classList.toggle('hidden', data.length > 0);
-    rows.innerHTML = '';
-    data.forEach(n => {
-      const emergency = n.category === 'emergency';
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td class="name">' + esc(n.title) + '</td>' +
-        '<td>' + esc(n.body) + '</td>' +
-        '<td><span class="pill ' + (emergency ? 'p-denied' : 'p-approved') + '">' +
-          (emergency ? 'EMERGENCY' : 'GENERAL') + '</span></td>' +
-        '<td>' + esc(n.author_name || '—') + '</td>';
-      rows.appendChild(tr);
-    });
-  }
-
-  async function postNotice(){
-    const title = document.getElementById('n-title').value.trim();
-    const body = document.getElementById('n-body').value.trim();
-    const category = document.getElementById('n-emergency').checked ? 'emergency' : 'general';
-    if(!title || !body){ msg('n-msg','Title and message are required', false); return; }
-    const r = await fetch('/notices', { method:'POST', headers: jsonHeader(),
-      body: JSON.stringify({ title, body, category }) });
-    if(r.status === 201){
-      msg('n-msg','Notice posted ✓', true);
-      document.getElementById('n-title').value = '';
-      document.getElementById('n-body').value = '';
-      document.getElementById('n-emergency').checked = false;
-      loadNotices();
-    } else msg('n-msg','Could not post (' + r.status + ')', false);
-  }
 
   async function downloadAll(){
     try{

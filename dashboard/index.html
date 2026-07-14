@@ -260,7 +260,7 @@
         </div>
         <div class="lhead"><h3>Posted notices</h3></div>
         <table>
-          <thead><tr><th>Title</th><th>Message</th><th>Type</th><th>Posted by</th></tr></thead>
+          <thead><tr><th>Title</th><th>Message</th><th>Type</th><th>Posted by</th><th>Posted</th></tr></thead>
           <tbody id="noticeRows"></tbody>
         </table>
         <div class="empty hidden" id="noticeEmpty">No notices yet.</div>
@@ -574,7 +574,8 @@
         '<td>' + esc(n.body) + '</td>' +
         '<td><span class="pill ' + (emergency ? 'p-denied' : 'p-approved') + '">' +
           (emergency ? 'EMERGENCY' : 'GENERAL') + '</span></td>' +
-        '<td>' + esc(n.author_name || '—') + '</td>';
+        '<td>' + esc(n.author_name || '—') + '</td>' +
+        '<td>' + fmtDate(n.created_at) + '</td>';
       rows.appendChild(tr);
     });
   }

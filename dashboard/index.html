@@ -59,6 +59,10 @@
   .tab{background:var(--glass);border:1px solid var(--line);color:var(--dim);
     padding:9px 18px;border-radius:999px;cursor:pointer;font-family:'Space Grotesk';font-weight:500;font-size:14px;}
   .tab.active{background:var(--brand);color:#05210f;border-color:var(--brand);}
+  .tab{position:relative;}
+  .tabdot{display:inline-flex;align-items:center;justify-content:center;
+    min-width:18px;height:18px;padding:0 5px;margin-left:7px;border-radius:999px;
+    background:#E23D3D;color:#fff;font-size:11px;font-weight:700;font-family:'Inter';}
 
   .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
   .chip{background:var(--glass);border:1px solid var(--line);color:var(--dim);
@@ -145,8 +149,8 @@
       </div>
 
       <div class="tabs">
-        <div class="tab active" id="tab-pickups" onclick="switchTab('pickups')">Pickups</div>
-        <div class="tab" id="tab-absences" onclick="switchTab('absences')">Absences</div>
+        <div class="tab active" id="tab-pickups" onclick="switchTab('pickups')">Pickups<span id="dot-pickups" class="tabdot hidden"></span></div>
+        <div class="tab" id="tab-absences" onclick="switchTab('absences')">Absences<span id="dot-absences" class="tabdot hidden"></span></div>
         <div class="tab hidden" id="tab-admin" onclick="switchTab('admin')">Admin</div>
         <div class="tab hidden" id="tab-notices" onclick="switchTab('notices')">Notices</div>
       </div>
@@ -283,6 +287,30 @@
   function authHeader(){ return { 'Authorization': 'Bearer ' + token() }; }
   function jsonHeader(){ return { 'Authorization': 'Bearer ' + token(), 'Content-Type': 'application/json' }; }
 
+  // --- unread tracking (stored in the browser) ---
+  function seenKey(area){ return 'gg_seen_' + area; }
+  function getSeen(area){
+    const raw = localStorage.getItem(seenKey(area));
+    return raw ? new Date(raw) : new Date(0);
+  }
+  function markSeen(area){
+    localStorage.setItem(seenKey(area), new Date().toISOString());
+  }
+  function countNew(list, dateKey, area){
+    const seen = getSeen(area);
+    return list.filter(item => {
+      const d = item[dateKey] ? new Date(item[dateKey]) : null;
+      return d && d > seen;
+    }).length;
+  }
+  function setDot(area, count){
+    const dot = document.getElementById('dot-' + area);
+    if(!dot) return;
+    if(count > 0){ dot.textContent = count > 9 ? '9+' : count; dot.classList.remove('hidden'); }
+    else { dot.classList.add('hidden'); }
+  }
+
+
   function fmtDate(iso){
     if(!iso) return '—';
     const d = new Date(iso);
@@ -347,6 +375,8 @@
     });
     if(t === 'admin') loadAdmin();
     if(t === 'notices') loadNotices();
+    if(t === 'pickups'){ markSeen('pickups'); setDot('pickups', 0); }
+    if(t === 'absences'){ markSeen('absences'); setDot('absences', 0); }
   }
 
   function setFilter(f){
@@ -369,7 +399,11 @@
     document.getElementById('s-total').textContent = all.length;
     document.getElementById('s-pending').textContent = all.filter(p=>p.status==='pending').length;
     document.getElementById('s-approved').textContent = all.filter(p=>p.status==='approved').length;
-    document.getElementById('s-released').textContent = all.filter(p=>p.status==='released').length;
+    // pending pickups are what the office needs to notice
+    setDot('pickups', all.filter(p => p.status === 'pending').length > 0
+      ? countNew(all.filter(p => p.status === 'pending'), 'requested_at', 'pickups') : 0);
+    
+    
 
     const rows = document.getElementById('pickupRows');
     document.getElementById('pickupEmpty').classList.toggle('hidden', data.length > 0);
@@ -395,6 +429,7 @@
     let data = [];
     try{ const r = await fetch('/absences', { headers: authHeader() }); if(r.status===200) data = await r.json(); }catch(e){ return; }
     const rows = document.getElementById('absenceRows');
+    setDot('absences', countNew(data, 'absence_date', 'absences'));
     document.getElementById('absenceEmpty').classList.toggle('hidden', data.length > 0);
     rows.innerHTML = '';
     data.forEach(a => {

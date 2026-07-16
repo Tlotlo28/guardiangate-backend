@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from app.api import auth, pickups, notices, absences, learners, admin
 from app.core.config import settings
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -31,3 +32,7 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/privacy")
+def privacy():
+    return FileResponse("legal/privacy.html")

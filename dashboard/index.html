@@ -480,6 +480,7 @@
         '<td>' + esc(u.phone || '—') + '</td>' +
         '<td><span class="pill p-approved">' + esc(u.role.toUpperCase()) + '</span></td>' +
         '<td><button class="mini edit" onclick="editUser(' + u.id + ')">Edit</button> ' +
+        '<button class="mini" onclick="resetPassword(' + u.id + ')">Reset PW</button> ' +
         '<button class="mini del" onclick="deleteUser(' + u.id + ')">Delete</button></td>';
       urows.appendChild(tr);
     });
@@ -633,7 +634,24 @@
       loadNotices();
     } else msg('n-msg','Could not post (' + r.status + ')', false);
   }
-
+  async function resetPassword(id){
+    const u = usersCache.find(x => x.id === id);
+    const who = u ? u.full_name : 'this person';
+    const pw = prompt('Set a new temporary password for ' + who + ':\n(at least 6 characters — then tell them to log in and it can be changed later)');
+    if(pw === null) return;              // cancelled
+    if(pw.trim().length < 6){ alert('Password must be at least 6 characters.'); return; }
+    const r = await fetch('/admin/users/' + id + '/reset-password', {
+      method:'POST', headers: jsonHeader(),
+      body: JSON.stringify({ new_password: pw.trim() })
+    });
+    if(r.status === 200){
+      alert('Password reset for ' + who + '.\nGive them the new password: ' + pw.trim());
+    } else if(r.status === 400){
+      alert('Password must be at least 6 characters.');
+    } else {
+      alert('Could not reset (' + r.status + ')');
+    }
+  }
 
   async function downloadAll(){
     try{

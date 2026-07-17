@@ -18,6 +18,7 @@ from app.schemas.admin import (
     GuardianLinkCreate, GuardianLinkOut,
 )
 from app.services.badges import make_badge
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -179,3 +180,24 @@ def badges_zip(db: Session = Depends(get_db),
     buf.seek(0)
     return StreamingResponse(buf, media_type="application/zip",
                              headers={"Content-Disposition": 'attachment; filename="guardiangate_badges.zip"'})
+
+
+class PasswordReset(BaseModel):
+    new_password: str
+
+
+@router.post("/users/{user_id}/reset-password")
+def reset_user_password(
+    user_id: int,
+    payload: PasswordReset,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*ADMIN_ROLES)),
+):
+    target = db.get(User, user_id)
+    if target is None or target.school_id != current_user.school_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    if len(payload.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    target.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"status": "password_reset", "id": user_id, "full_name": target.full_name}  
